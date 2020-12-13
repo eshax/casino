@@ -1004,7 +1004,7 @@ TEXT_ERROR_MIN_BET = "YOU BET IS LOWER THAN MINIMUM BET!!";
 TEXT_NO_MONEY = "YOU DON'T HAVE ENOUGH MONEY!!!";
 TEXT_RECHARGE_MSG = "PLEASE CLICK RECHARGE BUTTON TO PLAY AGAIN";
 var TEXT_CREDITS_DEVELOPED = "DEVELOPED BY",
-	TEXT_LINK = "WWW.CODETHISLAB.COM";
+	TEXT_LINK = "";
 TEXT_CONGRATULATIONS = "Congratulations!";
 TEXT_SHARE_1 = "You collected <strong>";
 TEXT_SHARE_2 = " points</strong>!<br><br>Share your score with your friends!";
@@ -1821,7 +1821,7 @@ function CMenu() {
 		s_bAudioActive = !s_bAudioActive
 	};
 	this._onCredits = function() {
-		new CCreditsPanel
+		// new CCreditsPanel  // about page
 	};
 	this.resetFullscreenBut = function() {
 		c && screenfull.enabled && n.setActive(s_bFullscreen)
@@ -4785,7 +4785,7 @@ function CCreditsPanel() {
 		s_oStage.removeChild(f)
 	};
 	this._onLogoButRelease = function() {
-		window.open("http://www.codethislab.com/index.php?&l=en")
+		// window.open("http://www.codethislab.com/index.php?&l=en")
 	};
 	this._init()
 }
