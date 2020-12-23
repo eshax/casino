@@ -1,6 +1,17 @@
 pragma solidity ^0.4.23;
 pragma experimental ABIEncoderV2;
 
+/*
+
+拟规划下注 1个游戏币 等于 0.001 eth 的情况下, 也就是折合人民币大概 3.9 人民币
+
+所以 1个游戏币 = 1e15, 0.1游戏币 = 1e14
+
+也就是说 1游戏币 = 1finney
+
+所以下注传递的 amount 都是 wei 单位
+
+*/
 contract games {
     
     struct Data {
@@ -22,10 +33,17 @@ contract games {
     
     function bet(Data[] memory data) public payable returns(uint, uint) {
         
+        uint total = 0;
         // 保存下注信息
         for (uint i = 0; i < data.length; i ++) {
-            listData.push(data[i]);
+            Data memory d = data[i];
+            listData.push(d);
+            total += d.amount;
         }
+        
+        require(msg.value != 0, "value is zero!");
+        
+        require(msg.value == total, "value is not equal bet amount!");
         
         // 开奖
         bonus = open();
@@ -97,7 +115,7 @@ contract games {
                     break;
                 }
             }
-        } 
+        }
 
         // 黑 [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35] * 1
         if (d.code == 52) {
@@ -142,7 +160,7 @@ contract games {
                     break;
                 }
             }
-        }        
+        }
         
         // line-2 [2,5,8,11,14,17,20,23,26,29,32,35] * 2
         if (d.code == 82) {
@@ -152,7 +170,7 @@ contract games {
                     break;
                 }
             }
-        }        
+        }
         
         // line-3 [3,6,9,12,15,18,21,24,27,30,33,36] * 2
         if (d.code == 83) {
