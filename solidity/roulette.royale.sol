@@ -19,17 +19,12 @@ contract roulette_royale {
         uint amount;
     }
     
-    Data[] private listData;
-    uint private random_number;
-    
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
     
-    uint[] private line1 = [1,4,7,10,13,16,19,22,25,28,31,34];
-    uint[] private line2 = [2,5,8,11,14,17,20,23,26,29,32,35];
-    uint[] private line3 = [3,6,9,12,15,18,21,24,27,30,33,36];
-    
-    uint private bonus = 0;
+    uint[] private line1        = [1,4,7,10,13,16,19,22,25,28,31,34];
+    uint[] private line2        = [2,5,8,11,14,17,20,23,26,29,32,35];
+    uint[] private line3        = [3,6,9,12,15,18,21,24,27,30,33,36];
     
     function bet(Data[] memory data) public payable returns(uint, uint) {
         
@@ -37,7 +32,6 @@ contract roulette_royale {
         // 保存下注信息
         for (uint i = 0; i < data.length; i ++) {
             Data memory d = data[i];
-            listData.push(d);
             total += d.amount;
         }
         
@@ -46,12 +40,12 @@ contract roulette_royale {
         require(msg.value == total, "value is not equal bet amount!");
         
         // 开奖
-        bonus = open();
+        uint random_number;
+        uint bonus;
+        (random_number, bonus) = open(data);
         
         // 派奖
         if (bonus > 0) msg.sender.transfer(bonus);
-        
-        delete listData;
         
         return (random_number, bonus);
     }
@@ -65,22 +59,23 @@ contract roulette_royale {
     //   null
     // returns:
     //   uint  -- 奖金
-    function open() private returns (uint) {
+    function open(Data[] memory data) private returns (uint, uint) {
         
         // 生成一个 0 - 36 的随机数
-        random_number = create_random_number();
+        uint random_number = create_random_number();
         
         uint amount = 0;
         
-        for ( uint j = 0; j < listData.length; j++ ) {
-            amount += check(listData[j]);
+        for ( uint i = 0; i < data.length; i++ ) {
+            Data memory d = data[i];
+            amount += check(random_number, d);
         }
         
-        return amount;
+        return (random_number, amount);
     }
     
     // 中奖检测
-    function check(Data d) private returns (uint) {
+    function check(uint random_number, Data d) private returns (uint) {
         
         uint i = 0;
         
