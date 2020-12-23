@@ -137,7 +137,7 @@ contract games {
         if (d.code == 81) {
             for (i = 0; i < line1.length; i++ ) {
                 if (line1[i] == x) {
-                    amount += bv + (d.amount * 1);
+                    amount += bv + (d.amount * 2);
                     break;
                 }
             }
@@ -147,7 +147,7 @@ contract games {
         if (d.code == 82) {
             for (i = 0; i < line2.length; i++ ) {
                 if (line2[i] == x) {
-                    amount += bv + (d.amount * 1);
+                    amount += bv + (d.amount * 2);
                     break;
                 }
             }
@@ -157,7 +157,7 @@ contract games {
         if (d.code == 83) {
             for (i = 0; i < line3.length; i++ ) {
                 if (line3[i] == x) {
-                    amount += bv + (d.amount * 1);
+                    amount += bv + (d.amount * 2);
                     break;
                 }
             }
