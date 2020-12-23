@@ -11,8 +11,8 @@ contract games {
     Data[] private listData;
     uint private random_number;
     
-    uint[] private redlist = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    uint[] private blacklist = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+    uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
     
     uint[] private line1 = [1,4,7,10,13,16,19,22,25,28,31,34];
     uint[] private line2 = [2,5,8,11,14,17,20,23,26,29,32,35];
@@ -20,10 +20,10 @@ contract games {
     
     uint private bonus = 0;
     
-    function bet(Data[] memory data) public returns(uint, uint) {
+    function bet(Data[] memory data) public payable returns(uint, uint) {
         
         // 保存下注信息
-        for (uint i=0; i<data.length; i++ ) {
+        for (uint i = 0; i < data.length; i ++) {
             listData.push(data[i]);
         }
         
