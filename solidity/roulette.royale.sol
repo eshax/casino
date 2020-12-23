@@ -12,7 +12,7 @@ pragma experimental ABIEncoderV2;
 所以下注传递的 amount 都是 wei 单位
 
 */
-contract games {
+contract roulette_royale {
     
     struct Data {
         uint code;
@@ -49,7 +49,7 @@ contract games {
         bonus = open();
         
         // 派奖
-        if (bonus > 0) payment(bonus);
+        if (bonus > 0) msg.sender.transfer(bonus);
         
         delete listData;
         
@@ -77,11 +77,6 @@ contract games {
         }
         
         return amount;
-    }
-    
-    // 派奖
-    function payment(uint bonus) private {
-        
     }
     
     // 中奖检测
