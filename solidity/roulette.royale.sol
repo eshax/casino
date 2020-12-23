@@ -18,6 +18,7 @@ contract games {
     uint[] private line2 = [2,5,8,11,14,17,20,23,26,29,32,35];
     uint[] private line3 = [3,6,9,12,15,18,21,24,27,30,33,36];
     
+    uint private bonus = 0;
     
     function bet(Data[] memory data) public returns(uint, uint) {
         
@@ -27,10 +28,12 @@ contract games {
         }
         
         // 开奖
-        uint bonus = open();
+        bonus = open();
         
         // 派奖
         if (bonus > 0) payment(bonus);
+        
+        delete listData;
         
         return (random_number, bonus);
     }
@@ -43,9 +46,7 @@ contract games {
     // params:
     //   null
     // returns:
-    //   uint  -- 开奖号码
     //   uint  -- 奖金
-    //   bool  -- 是否中奖
     function open() private returns (uint) {
         
         // 生成一个 0 - 36 的随机数
