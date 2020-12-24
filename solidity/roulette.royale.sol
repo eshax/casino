@@ -12,7 +12,40 @@ pragma experimental ABIEncoderV2;
 所以下注传递的 amount 都是 wei 单位
 
 */
-contract roulette_royale {
+
+contract Ownable {
+
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    constructor() internal {
+        _owner = msg.sender;
+        emit OwnershipTransferred(address(0), _owner);
+    }
+
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    function isOwner() public view returns (bool) {
+        return msg.sender == _owner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "Ownable: caller is not the owner");
+        _;
+    }
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+
+}
+
+contract roulette_royale is Ownable {
     
     struct Data {
         uint code;
@@ -26,6 +59,24 @@ contract roulette_royale {
     uint[] private line2        = [2,5,8,11,14,17,20,23,26,29,32,35];
     uint[] private line3        = [3,6,9,12,15,18,21,24,27,30,33,36];
     
+    function() external payable {    
+        
+    }
+    
+    /*
+        合约销毁, 仅支持 owner 操作
+    */
+    function kill() external onlyOwner {
+        selfdestruct(msg.sender);
+    }
+
+    /*
+        合约提现, 仅支持 owner 操作
+    */
+    function withdraw(uint amount) external onlyOwner {
+        msg.sender.transfer(amount);
+    }
+
     function bet(Data[] memory data) public payable returns(uint, uint) {
         
         uint total = 0;
