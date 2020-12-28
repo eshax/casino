@@ -59,7 +59,7 @@ contract roulette_royale is Ownable {
     uint[] private line2        = [2,5,8,11,14,17,20,23,26,29,32,35];
     uint[] private line3        = [3,6,9,12,15,18,21,24,27,30,33,36];
     
-    function() external payable {    
+    function() external payable {
         
     }
     
@@ -136,8 +136,12 @@ contract roulette_royale is Ownable {
         
         uint x = random_number;
         
+        uint fee = (d.amount / 100);
+        
+        if (fee < 1e13) fee = 1e13;
+        
         // 单注净值 (扣除 1% 的手续费)
-        uint bv = d.amount - (d.amount / 100);
+        uint bv = d.amount - fee;
         
         // 数字 * 35
         if (d.code == x) amount += bv + (d.amount * 35);
