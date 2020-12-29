@@ -3,13 +3,8 @@ pragma experimental ABIEncoderV2;
 
 /*
 
-拟规划下注 1个游戏币 等于 0.001 eth 的情况下, 也就是折合人民币大概 3.9 人民币
-
-所以 1个游戏币 = 1e15, 0.1游戏币 = 1e14
-
-也就是说 1游戏币 = 1finney
-
-所以下注传递的 amount 都是 wei 单位
+1:1 比例 
+1个游戏币 = 1ETH
 
 */
 
@@ -77,6 +72,15 @@ contract roulette_royale is Ownable {
         msg.sender.transfer(amount);
     }
 
+
+    /*
+        下注接口
+        
+            params：
+                data  -- 下注数据
+            returns:
+                uint  -- 
+    */
     function bet(Data[] memory data) public payable returns(uint, uint) {
         
         uint total = 0;
@@ -105,11 +109,15 @@ contract roulette_royale is Ownable {
         return uint(keccak256(block.difficulty, block.number, now, block.timestamp)) % 37;
     }
     
-    // 执行开奖
-    // params:
-    //   null
-    // returns:
-    //   uint  -- 奖金
+    /*
+        执行开奖
+        
+            params:
+                data  -- 下注数据
+            returns:
+                uint  -- 随机数
+                uint  -- 奖金
+    */
     function open(Data[] memory data) private returns (uint, uint) {
         
         // 生成一个 0 - 36 的随机数
@@ -125,7 +133,17 @@ contract roulette_royale is Ownable {
         return (random_number, amount);
     }
     
-    // 中奖检测
+    /*
+        中奖检测
+        
+            params:
+                uint  -- 随机数
+                Data  -- 下注数据
+                
+            returns:
+                uint  -- 奖金金额
+            
+    */
     function check(uint random_number, Data d) private returns (uint) {
         
         uint i = 0;
