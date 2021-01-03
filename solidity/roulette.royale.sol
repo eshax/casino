@@ -32,11 +32,11 @@ contract Ownable {
         _;
     }
 
-    function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
+    // function transferOwnership(address newOwner) public onlyOwner {
+    //     require(newOwner != address(0), "Ownable: new owner is the zero address");
+    //     emit OwnershipTransferred(_owner, newOwner);
+    //     _owner = newOwner;
+    // }
 
 }
 
@@ -81,18 +81,23 @@ contract roulette_royale is Ownable {
             returns:
                 uint  -- 
     */
-    function bet(Data[] memory data) public payable returns(uint, uint) {
-        
+    function bet(Data[] memory data) public payable returns (uint, uint) {
+
         uint total = 0;
         // 保存下注信息
         for (uint i = 0; i < data.length; i ++) {
-            Data memory d = data[i];
-            total += d.amount;
+            Data memory o = data[i];
+            total += o.amount;
         }
         
-        require(msg.value != 0, "value is zero!");
+        // 实际 transfer 金额
+        uint amount = msg.value;
+
+        // 判断下注金额是否为0
+        require(amount != 0, "msg.value is zero!");
         
-        require(msg.value == total, "value is not equal bet amount!");
+        // 判断 msg value 是否与 下注累计金额相等
+        require(amount == total, "msg.value is not equal bet amount!");
         
         // 开奖
         uint random_number;
@@ -154,8 +159,10 @@ contract roulette_royale is Ownable {
         
         uint x = random_number;
         
+        // 手续费
         uint fee = (d.amount / 100);
         
+        // 最低手续费限制
         if (fee < 1e13) fee = 1e13;
         
         // 单注净值 (扣除 1% 的手续费)
@@ -245,10 +252,21 @@ contract roulette_royale is Ownable {
             }
         }
         
-        // 1/2 * 17   [low number] 例如 用户选择 1和2 那么 code = 201
-        if (d.code > 200 && d.code < 300) {
-            c = d.code - 200;
+        // 1/2 * 17   [low number] 例如 用户选择 0和1 那么 code = 2001
+        if (d.code == 2001 && (x == 0 || x == 1)) amount += bv + (d.amount * 17);
+        if (d.code == 2002 && (x == 0 || x == 2)) amount += bv + (d.amount * 17);
+        if (d.code == 2003 && (x == 0 || x == 3)) amount += bv + (d.amount * 17);
+
+        // 1/2 * 17   [low number] 例如 用户选择 1和2 那么 code = 2101 横
+        if (d.code > 2100 && d.code < 2200) {
+            c = d.code - 2100;
             if (x == c || x == c + 1) amount += bv + (d.amount * 17);
+        }
+
+        // 1/2 * 17   [low number] 例如 用户选择 1和4 那么 code = 2201 竖
+        if (d.code > 2200 && d.code < 2300) {
+            c = d.code - 2200;
+            if (x == c || x == c + 3) amount += bv + (d.amount * 17);
         }
         
         // 1/4 * 8    [low number] 例如 选择了 1和2和4和5 那么 code = 401
