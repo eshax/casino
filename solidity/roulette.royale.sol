@@ -47,6 +47,15 @@ contract roulette_royale is Ownable {
         uint amount;
     }
     
+    struct Bet {
+        Data[] data;
+        address player;
+        uint random_number;
+        uint bonus;
+    }
+    
+    mapping(uint => Bet) private Bets;
+    
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
     
@@ -81,13 +90,19 @@ contract roulette_royale is Ownable {
             returns:
                 uint  -- 
     */
-    function bet(Data[] memory data) public payable returns (uint, uint) {
+    function bet(Data[] memory data) public payable returns (uint) {
+
+        uint token = uint(keccak256(msg.sender, now));
+
+        Bet storage bet = Bets[token];
+        require (bet.player == address(0), "Bet should be in a 'clean' state.");
 
         uint total = 0;
         // 保存下注信息
         for (uint i = 0; i < data.length; i ++) {
             Data memory o = data[i];
             total += o.amount;
+            bet.data.push(o);
         }
         
         // 实际 transfer 金额
@@ -99,18 +114,16 @@ contract roulette_royale is Ownable {
         // 判断 msg value 是否与 下注累计金额相等
         require(amount == total, "msg.value is not equal bet amount!");
         
-        // 开奖
-        uint random_number;
-        uint bonus;
-        (random_number, bonus) = open(data);
+        bet.random_number = create_random();
         
-        // 派奖
-        if (bonus > 0) msg.sender.transfer(bonus);
+        uint bonus = check(bet);
         
-        return (random_number, bonus);
+        require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
+        
+        return (token);
     }
     
-    function create_random_number() private returns (uint) {
+    function create_random() private returns (uint) {
         return uint(keccak256(block.difficulty, block.number, now, block.timestamp)) % 37;
     }
     
@@ -123,19 +136,33 @@ contract roulette_royale is Ownable {
                 uint  -- 随机数
                 uint  -- 奖金
     */
-    function open(Data[] memory data) private returns (uint, uint) {
+    function open(uint token) public returns (uint) {
         
-        // 生成一个 0 - 36 的随机数
-        uint random_number = create_random_number();
+        Bet storage bet = Bets[token];
+        require (bet.data.length > 0, "no bet data.");
         
+        uint bonus = check(bet);
+        
+        require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
+        
+        // 派奖
+        if (bonus > 0) msg.sender.transfer(bonus);
+        
+        delete Bets[token];
+        
+        return bonus;
+    }
+    
+    
+    function check(Bet bet) private returns (uint) {
         uint amount = 0;
         
-        for ( uint i = 0; i < data.length; i++ ) {
-            Data memory d = data[i];
-            amount += check(random_number, d);
+        for ( uint i = 0; i < bet.data.length; i++ ) {
+            Data memory d = bet.data[i];
+            amount += check(bet.random_number, d);
         }
         
-        return (random_number, amount);
+        return amount;
     }
     
     /*
