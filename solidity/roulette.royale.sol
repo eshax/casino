@@ -112,7 +112,7 @@ contract roulette_royale is Ownable {
             params：
                 data  -- 下注数据
             returns:
-                uint  -- 
+                uint  -- Token
     */
     function bet(Data[] memory data) public payable returns (uint) {
 
@@ -138,14 +138,19 @@ contract roulette_royale is Ownable {
         // 判断 msg value 是否与 下注累计金额相等
         require(amount == total, "msg.value is not equal bet amount!");
         
+        // 随机数
         bet.random_number = create_random();
         
+        // 计算奖金
         uint bonus = check(bet);
         
+        // 判断合约是否有支付能力
         require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
         
+        // 派奖
         if (bonus > 0) msg.sender.transfer(bonus);
         
+        // 
         bet.bonus = bonus;
         
         emit Commit(token);
@@ -172,8 +177,9 @@ contract roulette_royale is Ownable {
     */
     function query(uint token) returns (uint) {
         
-        Bet storage bet = Bets[token];
-        require (bet.data.length > 0, "no bet data.");
+        Bet bet = Bets[token];
+
+        require (bet.player == msg.sender, "caller is not the player!");
         
         return bet.bonus;
     }
