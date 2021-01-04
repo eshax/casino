@@ -127,6 +127,10 @@ contract roulette_royale is Ownable {
         return (token);
     }
     
+    /*
+        随机数
+         0 - 36 中的 一个
+    */
     function create_random() private returns (uint) {
         return uint(keccak256(block.difficulty, block.number, now, block.timestamp)) % 37;
     }
@@ -157,7 +161,15 @@ contract roulette_royale is Ownable {
         return bonus;
     }
     
-    
+    /*
+        中奖检测
+            
+            params:
+                Bet  -- 下注信息
+                
+            returns:
+                uint -- 奖金金额 (包含原始投注金额)
+    */
     function check(Bet bet) private returns (uint) {
         uint amount = 0;
         
