@@ -11,25 +11,25 @@ pragma experimental ABIEncoderV2;
 contract Ownable {
 
     address private _owner;
-    address private _croupier;
+    // address private _croupier;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    event CroupiershipTransferred(address indexed previousCroupier, address indexed newCroupier);
+    // event CroupiershipTransferred(address indexed previousCroupier, address indexed newCroupier);
 
     constructor() internal {
         _owner = msg.sender;
-        _croupier = msg.sender;
+        // _croupier = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
-        emit CroupiershipTransferred(address(0), _croupier);
+        // emit CroupiershipTransferred(address(0), _croupier);
     }
 
     function owner() public view returns (address) {
         return _owner;
     }
     
-    function croupier() public view returns (address) {
-        return _croupier;
-    }
+    // function croupier() public view returns (address) {
+    //     return _croupier;
+    // }
 
     function isOwner() public view returns (bool) {
         return msg.sender == _owner;
@@ -40,16 +40,16 @@ contract Ownable {
         _;
     }
     
-    modifier onlyCroupier() {
-        require(msg.sender == _croupier, "Ownable: caller is not the croupier");
-        _;
-    }
+    // modifier onlyCroupier() {
+    //     require(msg.sender == _croupier, "Ownable: caller is not the croupier");
+    //     _;
+    // }
     
-    function transferCroupiership(address newCroupier) public onlyOwner {
-        require(newCroupier != address(0), "Ownable: new croupier is the zero address");
-        emit OwnershipTransferred(_croupier, newCroupier);
-        _croupier = newCroupier;
-    }
+    // function transferCroupiership(address newCroupier) public onlyOwner {
+    //     require(newCroupier != address(0), "Ownable: new croupier is the zero address");
+    //     emit OwnershipTransferred(_croupier, newCroupier);
+    //     _croupier = newCroupier;
+    // }
 
     function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
@@ -120,6 +120,9 @@ contract roulette_royale is Ownable {
 
         Bet storage bet = Bets[token];
         require (bet.player == address(0), "Bet should be in a 'clean' state.");
+        
+        // 保存玩家 address
+        bet.player = msg.sender;
 
         // 下注总金额
         uint bet_total = 0;
