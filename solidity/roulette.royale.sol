@@ -78,7 +78,6 @@ contract roulette_royale is Ownable {
     mapping(uint => Bet) private Bets;
     
     event Commit(uint);
-    event Over(uint);
     
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
@@ -110,7 +109,8 @@ contract roulette_royale is Ownable {
         下注接口
         
             params：
-                data  -- 下注数据
+                data  -- 下注数据  ps: [[61, 1e15], [62, 2e15]]
+                
             returns:
                 uint  -- Token
     */
@@ -121,22 +121,17 @@ contract roulette_royale is Ownable {
         Bet storage bet = Bets[token];
         require (bet.player == address(0), "Bet should be in a 'clean' state.");
 
-        uint total = 0;
+        // 下注总金额
+        uint bet_total = 0;
         // 保存下注信息
         for (uint i = 0; i < data.length; i ++) {
-            Data memory o = data[i];
-            total += o.amount;
-            bet.data.push(o);
+            Data memory d = data[i];
+            bet_total += d.amount;
+            bet.data.push(d);
         }
-        
-        // 实际 transfer 金额
-        uint amount = msg.value;
 
-        // 判断下注金额是否为0
-        require(amount != 0, "msg.value is zero!");
-        
-        // 判断 msg value 是否与 下注累计金额相等
-        require(amount == total, "msg.value is not equal bet amount!");
+        // 验证实际下注金额
+        require(msg.value > 0 && msg.value >= bet_total, "insufficient fund!");
         
         // 随机数
         bet.random_number = create_random();
@@ -144,15 +139,16 @@ contract roulette_royale is Ownable {
         // 计算奖金
         uint bonus = check(bet);
         
-        // 判断合约是否有支付能力
+        // 验证合约是否有足够的支付能力
         require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
         
         // 派奖
         if (bonus > 0) msg.sender.transfer(bonus);
         
-        // 
+        // 保存奖金
         bet.bonus = bonus;
         
+        // 通知 web3 已经开奖
         emit Commit(token);
         
         return (token);
@@ -177,8 +173,8 @@ contract roulette_royale is Ownable {
     */
     function query(uint token) returns (uint) {
         
-        Bet bet = Bets[token];
-
+        Bet memory bet = Bets[token];
+        
         require (bet.player == msg.sender, "caller is not the player!");
         
         return bet.bonus;
