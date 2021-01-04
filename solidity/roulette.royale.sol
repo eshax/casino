@@ -78,6 +78,7 @@ contract roulette_royale is Ownable {
     mapping(uint => Bet) private Bets;
     
     event Commit(uint);
+    event Over(uint);
     
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
@@ -143,6 +144,10 @@ contract roulette_royale is Ownable {
         
         require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
         
+        if (bonus > 0) msg.sender.transfer(bonus);
+        
+        bet.bonus = bonus;
+        
         emit Commit(token);
         
         return (token);
@@ -157,30 +162,20 @@ contract roulette_royale is Ownable {
     }
     
     /*
-        执行开奖
+        查询开奖结果
         
             params:
                 token  -- token
                 
             returns:
-                uint  -- 随机数
                 uint  -- 奖金
     */
-    function open(uint token) external onlyCroupier returns (uint) {
+    function query(uint token) returns (uint) {
         
         Bet storage bet = Bets[token];
         require (bet.data.length > 0, "no bet data.");
         
-        uint bonus = check(bet);
-        
-        require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
-        
-        // 派奖
-        if (bonus > 0) msg.sender.transfer(bonus);
-        
-        delete Bets[token];
-        
-        return bonus;
+        return bet.bonus;
     }
     
     /*
