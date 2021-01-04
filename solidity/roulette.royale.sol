@@ -11,16 +11,24 @@ pragma experimental ABIEncoderV2;
 contract Ownable {
 
     address private _owner;
+    address private _croupier;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event CroupiershipTransferred(address indexed previousCroupier, address indexed newCroupier);
 
     constructor() internal {
         _owner = msg.sender;
+        _croupier = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
+        emit CroupiershipTransferred(address(0), _croupier);
     }
 
     function owner() public view returns (address) {
         return _owner;
+    }
+    
+    function croupier() public view returns (address) {
+        return _croupier;
     }
 
     function isOwner() public view returns (bool) {
@@ -31,14 +39,27 @@ contract Ownable {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
         _;
     }
+    
+    modifier onlyCroupier() {
+        require(msg.sender == _croupier, "Ownable: caller is not the croupier");
+        _;
+    }
+    
+    function transferCroupiership(address newCroupier) public onlyOwner {
+        require(newCroupier != address(0), "Ownable: new croupier is the zero address");
+        emit OwnershipTransferred(_croupier, newCroupier);
+        _croupier = newCroupier;
+    }
 
-    // function transferOwnership(address newOwner) public onlyOwner {
-    //     require(newOwner != address(0), "Ownable: new owner is the zero address");
-    //     emit OwnershipTransferred(_owner, newOwner);
-    //     _owner = newOwner;
-    // }
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
 
 }
+
+
 
 contract roulette_royale is Ownable {
     
@@ -139,12 +160,13 @@ contract roulette_royale is Ownable {
         执行开奖
         
             params:
-                data  -- 下注数据
+                token  -- token
+                
             returns:
                 uint  -- 随机数
                 uint  -- 奖金
     */
-    function open(uint token) public returns (uint) {
+    function open(uint token) external onlyCroupier returns (uint) {
         
         Bet storage bet = Bets[token];
         require (bet.data.length > 0, "no bet data.");
