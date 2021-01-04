@@ -165,7 +165,8 @@ contract roulette_royale is Ownable {
     */
     function create_random() private returns (uint) {
         uint random = uint(keccak256(block.difficulty, block.number, now, block.timestamp, randNonce)) % 37;
-        randNonce ++;
+        randNonce += random;
+        if (randNonce > now) randNonce = random;
         return random;
     }
     
