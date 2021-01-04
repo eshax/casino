@@ -77,6 +77,8 @@ contract roulette_royale is Ownable {
     
     mapping(uint => Bet) private Bets;
     
+    uint private randNonce = 0;
+    
     event Commit(uint);
     
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
@@ -162,7 +164,9 @@ contract roulette_royale is Ownable {
          0 - 36 中的 一个
     */
     function create_random() private returns (uint) {
-        return uint(keccak256(block.difficulty, block.number, now, block.timestamp)) % 37;
+        uint random = uint(keccak256(block.difficulty, block.number, now, block.timestamp, randNonce)) % 37;
+        randNonce ++;
+        return random;
     }
     
     /*
