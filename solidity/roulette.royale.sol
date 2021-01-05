@@ -328,22 +328,26 @@ contract roulette_royale is Ownable {
             }
         }
         
-        // 1/2 * 17   [low number] 例如 用户选择 0和1 那么 code = 2001
-        if (d.code == 2001 && (x == 0 || x == 1)) amount += bv + (d.amount * 17);
-        if (d.code == 2002 && (x == 0 || x == 2)) amount += bv + (d.amount * 17);
-        if (d.code == 2003 && (x == 0 || x == 3)) amount += bv + (d.amount * 17);
+        // 1/2 * 17   [low number] 例如 用户选择 0和1 那么 code = 241
+        if (d.code == 241 && (x == 0 || x == 1)) amount += bv + (d.amount * 17);
+        if (d.code == 242 && (x == 0 || x == 2)) amount += bv + (d.amount * 17);
+        if (d.code == 243 && (x == 0 || x == 3)) amount += bv + (d.amount * 17);
 
-        // 1/2 * 17   [low number] 例如 用户选择 1和2 那么 code = 2101 横
-        if (d.code > 2100 && d.code < 2200) {
-            c = d.code - 2100;
+        // 1/2 * 17   [low number] 例如 用户选择 1和2 那么 code = 201 横
+        if (d.code > 200 && d.code < 240) {
+            c = d.code - 200;
             if (x == c || x == c + 1) amount += bv + (d.amount * 17);
         }
 
-        // 1/2 * 17   [low number] 例如 用户选择 1和4 那么 code = 2201 竖
-        if (d.code > 2200 && d.code < 2300) {
-            c = d.code - 2200;
+        // 1/2 * 17   [low number] 例如 用户选择 1和4 那么 code = 251 竖
+        if (d.code > 250 && d.code < 300) {
+            c = d.code - 250;
             if (x == c || x == c + 3) amount += bv + (d.amount * 17);
         }
+        
+        // 1/3 * 11   [low number] 例如 用户选择 0和1和2 那么 code = 301
+        if (d.code == 301 && (x == 0 || x == 1 || x == 2)) amount += bv + (d.amount * 11);
+        if (d.code == 302 && (x == 0 || x == 2 || x == 3)) amount += bv + (d.amount * 11);
         
         // 1/4 * 8    [low number] 例如 选择了 1和2和4和5 那么 code = 401
         if (d.code > 400 && d.code < 500) {
