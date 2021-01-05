@@ -11,25 +11,25 @@ pragma experimental ABIEncoderV2;
 contract Ownable {
 
     address private _owner;
-    // address private _croupier;
+    address private _croupier;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    // event CroupiershipTransferred(address indexed previousCroupier, address indexed newCroupier);
+    event CroupiershipTransferred(address indexed previousCroupier, address indexed newCroupier);
 
     constructor() internal {
         _owner = msg.sender;
-        // _croupier = msg.sender;
+        _croupier = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
-        // emit CroupiershipTransferred(address(0), _croupier);
+        emit CroupiershipTransferred(address(0), _croupier);
     }
 
     function owner() public view returns (address) {
         return _owner;
     }
     
-    // function croupier() public view returns (address) {
-    //     return _croupier;
-    // }
+    function croupier() public view returns (address) {
+        return _croupier;
+    }
 
     function isOwner() public view returns (bool) {
         return msg.sender == _owner;
@@ -40,16 +40,16 @@ contract Ownable {
         _;
     }
     
-    // modifier onlyCroupier() {
-    //     require(msg.sender == _croupier, "Ownable: caller is not the croupier");
-    //     _;
-    // }
+    modifier onlyCroupier() {
+        require(msg.sender == _croupier, "Ownable: caller is not the croupier");
+        _;
+    }
     
-    // function transferCroupiership(address newCroupier) public onlyOwner {
-    //     require(newCroupier != address(0), "Ownable: new croupier is the zero address");
-    //     emit OwnershipTransferred(_croupier, newCroupier);
-    //     _croupier = newCroupier;
-    // }
+    function transferCroupiership(address newCroupier) public onlyOwner {
+        require(newCroupier != address(0), "Ownable: new croupier is the zero address");
+        emit OwnershipTransferred(_croupier, newCroupier);
+        _croupier = newCroupier;
+    }
 
     function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
@@ -79,7 +79,8 @@ contract roulette_royale is Ownable {
     
     uint private randNonce = 0;
     
-    event Commit(uint);
+    event CommitBet(uint);
+    event CommitOpen(uint);
     
     uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
@@ -106,19 +107,16 @@ contract roulette_royale is Ownable {
         msg.sender.transfer(amount);
     }
 
-
     /*
         下注接口
         
             params：
+                token -- token (项目方生成)
                 data  -- 下注数据  ps: [[61, 1e15], [62, 2e15]]
                 
-            returns:
-                uint  -- Token
-    */
-    function bet(Data[] memory data) public payable returns (uint) {
 
-        uint token = uint(keccak256(msg.sender, now));
+    */
+    function bet(uint token, Data[] memory data) public payable {
 
         Bet storage bet = Bets[token];
         require (bet.player == address(0), "Bet should be in a 'clean' state.");
@@ -139,52 +137,60 @@ contract roulette_royale is Ownable {
         require(msg.value > 0 && msg.value >= bet_total, "insufficient fund!");
         
         // 随机数
-        bet.random_number = create_random();
+        bet.random_number = create_random(token);
         
         // 计算奖金
-        uint bonus = check(bet);
+        bet.bonus = check(bet);
         
         // 验证合约是否有足够的支付能力
-        require (bonus <= address(this).balance, "Cannot afford to lose this bet.");
+        require (bet.bonus <= address(this).balance, "Cannot afford to lose this bet.");
         
-        // 派奖
-        if (bonus > 0) msg.sender.transfer(bonus);
-        
-        // 保存奖金
-        bet.bonus = bonus;
-        
-        // 通知 web3 已经开奖
-        emit Commit(token);
-        
-        return (token);
+        // 通知 项目方 已经完成下注
+        emit CommitBet(token);
     }
     
     /*
         随机数
          0 - 36 中的 一个
     */
-    function create_random() private returns (uint) {
-        uint random = uint(keccak256(block.difficulty, block.number, now, block.timestamp, randNonce)) % 37;
-        randNonce += random;
-        if (randNonce > now) randNonce = random;
-        return random;
+    function create_random(uint token) private returns (uint) {
+        uint r = uint(keccak256(block.difficulty, block.number, now, block.timestamp, token)) % 37;
+        return r;
     }
     
     /*
-        查询开奖结果
+        开奖
+        
+            只允许项目方指定的 address 调用
         
             params:
-                token  -- token
+                token  -- token (项目方生成)
+
+    */
+    function open(uint token) external onlyCroupier {
+        
+        Bet memory bet = Bets[token];
+        
+        // 派奖
+        if (bet.bonus > 0 && address(this).balance > bet.bonus) bet.player.transfer(bet.bonus);
+        
+        emit CommitOpen(token);
+    }
+
+    /*
+        查询开奖结果
+        
+            只允许 玩家 address 调用
+        
+            params:
+                token  -- token (项目方生成)
                 
             returns:
                 uint  -- 奖金
     */
     function query(uint token) returns (uint) {
-        
         Bet memory bet = Bets[token];
-        
         require (bet.player == msg.sender, "caller is not the player!");
-        
         return bet.bonus;
     }
     
