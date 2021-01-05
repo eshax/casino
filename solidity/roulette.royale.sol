@@ -67,20 +67,19 @@ contract Ownable {
 contract roulette_royale is Ownable {
     
     struct Data {
-        uint code;
-        uint amount;
+        uint code;          // 下注编码
+        uint amount;        // 下注金额
     }
     
     struct Bet {
-        Data[] data;
-        address player;
-        uint random_number;
-        uint bonus;
+        Data[] data;        // 下注信息
+        address player;     // 玩家地址
+        uint amount;        // 下注总金额
+        uint random;        // 中奖号码
+        uint bonus;         // 奖金
     }
     
     mapping(uint => Bet) private Bets;
-    
-    uint private randNonce = 0;
     
     event CommitBet(uint);
     event CommitOpen(uint);
@@ -116,7 +115,6 @@ contract roulette_royale is Ownable {
             params：
                 token -- token (项目方生成)
                 data  -- 下注数据  ps: [[61, 1e15], [62, 2e15]]
-                
 
     */
     function bet(uint token, Data[] memory data) public payable {
@@ -128,25 +126,20 @@ contract roulette_royale is Ownable {
         bet.player = msg.sender;
 
         // 下注总金额
-        uint bet_total = 0;
-        // 保存下注信息
+        bet.amount = 0;
+        
+        /*
+            保存下注信息
+            更新下注总金额
+        */
         for (uint i = 0; i < data.length; i ++) {
             Data memory d = data[i];
-            bet_total += d.amount;
+            bet.amount += d.amount;
             bet.data.push(d);
         }
 
-        // 验证实际下注金额
-        require(msg.value > 0 && msg.value >= bet_total, "insufficient fund!");
-        
-        // 随机数
-        bet.random_number = create_random(token);
-        
-        // 计算奖金
-        bet.bonus = check(bet);
-        
-        // 验证合约是否有足够的支付能力
-        require (bet.bonus <= address(this).balance, "Cannot afford to lose this bet.");
+        // 验证下注金额是否有效
+        require(msg.value > 0 && msg.value >= bet.amount, "insufficient fund!");
         
         // 通知 项目方 已经完成下注
         emit CommitBet(token);
@@ -156,8 +149,8 @@ contract roulette_royale is Ownable {
         随机数
          0 - 36 中的 一个
     */
-    function create_random(uint token) private returns (uint) {
-        uint r = uint(keccak256(block.difficulty, block.number, now, block.timestamp, token)) % 37;
+    function create_random(uint token, uint random) private returns (uint) {
+        uint r = uint(keccak256(block.difficulty, block.number, block.timestamp, now, token, random)) % 37;
         return r;
     }
     
@@ -168,14 +161,30 @@ contract roulette_royale is Ownable {
         
             params:
                 token  -- token (项目方生成)
+                random -- 随机码 (项目方开奖前生成)
 
     */
-    function open(uint token) external onlyCroupier {
+    function open(uint token, uint random) external onlyCroupier {
         
         Bet memory bet = Bets[token];
         
-        // 派奖
-        if (bet.bonus > 0 && address(this).balance > bet.bonus) bet.player.transfer(bet.bonus);
+        if (bet.player != address(0)) {
+            // 随机数
+            bet.random = create_random(token, random);
+            
+            // 计算奖金
+            bet.bonus = check(bet);
+            
+            // 派奖
+            if (bet.bonus >= address(this).balance) {
+                bet.bonus = 0;
+                bet.player.transfer(bet.amount);
+            } else {
+                if (bet.bonus > 0) {
+                    bet.player.transfer(bet.bonus);
+                }
+            }
+        }
         
         emit CommitOpen(token);
     }
@@ -211,7 +220,7 @@ contract roulette_royale is Ownable {
         
         for ( uint i = 0; i < bet.data.length; i++ ) {
             Data memory d = bet.data[i];
-            amount += check(bet.random_number, d);
+            amount += check(bet.random, d);
         }
         
         return amount;
