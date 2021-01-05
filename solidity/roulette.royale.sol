@@ -6,6 +6,9 @@ pragma experimental ABIEncoderV2;
 1:1 比例 
 1个游戏币 = 1ETH
 
+手续费：1%
+最低下注手续费 1e15 --> 1 finney --> 0.001 ether
+
 */
 
 contract Ownable {
@@ -238,8 +241,8 @@ contract roulette_royale is Ownable {
         // 手续费
         uint fee = (d.amount / 100);
         
-        // 最低手续费限制
-        if (fee < 1e13) fee = 1e13;
+        // 最低手续费限制 1 finney
+        if (fee < 1e15) fee = 1e15;
         
         // 单注净值 (扣除 1% 的手续费)
         uint bv = d.amount - fee;
