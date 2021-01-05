@@ -119,14 +119,14 @@ contract roulette_royale is Ownable {
     */
     function bet(uint token, Data[] memory data) public payable {
 
-        Bet storage bet = Bets[token];
-        require (bet.player == address(0), "Bet should be in a 'clean' state.");
+        Bet storage b = Bets[token];
+        require (b.player == address(0), "Bet should be in a 'clean' state.");
         
         // 保存玩家 address
-        bet.player = msg.sender;
+        b.player = msg.sender;
 
         // 下注总金额
-        bet.amount = 0;
+        b.amount = 0;
         
         /*
             保存下注信息
@@ -134,12 +134,12 @@ contract roulette_royale is Ownable {
         */
         for (uint i = 0; i < data.length; i ++) {
             Data memory d = data[i];
-            bet.amount += d.amount;
-            bet.data.push(d);
+            b.amount += d.amount;
+            b.data.push(d);
         }
 
         // 验证下注金额是否有效
-        require(msg.value > 0 && msg.value >= bet.amount, "insufficient fund!");
+        require(msg.value > 0 && msg.value >= b.amount, "insufficient fund!");
         
         // 通知 项目方 已经完成下注
         emit CommitBet(token);
@@ -149,8 +149,8 @@ contract roulette_royale is Ownable {
         随机数
          0 - 36 中的 一个
     */
-    function create_random(uint token, uint random) private returns (uint) {
-        uint r = uint(keccak256(block.difficulty, block.number, block.timestamp, now, token, random)) % 37;
+    function create_random(uint token, uint random) private view returns (uint) {
+        uint r = uint(keccak256(abi.encodePacked(block.difficulty, block.number, block.timestamp, now, token, random))) % 37;
         return r;
     }
     
@@ -166,22 +166,22 @@ contract roulette_royale is Ownable {
     */
     function open(uint token, uint random) external onlyCroupier {
         
-        Bet memory bet = Bets[token];
+        Bet memory b = Bets[token];
         
-        if (bet.player != address(0)) {
+        if (b.player != address(0)) {
             // 随机数
-            bet.random = create_random(token, random);
+            b.random = create_random(token, random);
             
             // 计算奖金
-            bet.bonus = check(bet);
+            b.bonus = check(b);
             
             // 派奖
-            if (bet.bonus >= address(this).balance) {
-                bet.bonus = 0;
-                bet.player.transfer(bet.amount);
+            if (b.bonus >= address(this).balance) {
+                b.bonus = 0;
+                b.player.transfer(b.amount);
             } else {
-                if (bet.bonus > 0) {
-                    bet.player.transfer(bet.bonus);
+                if (b.bonus > 0) {
+                    b.player.transfer(b.bonus);
                 }
             }
         }
@@ -200,10 +200,10 @@ contract roulette_royale is Ownable {
             returns:
                 uint  -- 奖金
     */
-    function query(uint token) returns (uint) {
-        Bet memory bet = Bets[token];
-        require (bet.player == msg.sender, "caller is not the player!");
-        return bet.bonus;
+    function query(uint token) public view returns (uint) {
+        Bet memory b = Bets[token];
+        require (b.player == msg.sender, "caller is not the player!");
+        return b.bonus;
     }
     
     /*
@@ -215,12 +215,12 @@ contract roulette_royale is Ownable {
             returns:
                 uint -- 奖金金额 (包含原始投注金额)
     */
-    function check(Bet bet) private returns (uint) {
+    function check(Bet b) private view returns (uint) {
         uint amount = 0;
         
-        for ( uint i = 0; i < bet.data.length; i++ ) {
-            Data memory d = bet.data[i];
-            amount += check(bet.random, d);
+        for ( uint i = 0; i < b.data.length; i++ ) {
+            Data memory d = b.data[i];
+            amount += check(b.random, d);
         }
         
         return amount;
@@ -237,7 +237,7 @@ contract roulette_royale is Ownable {
                 uint  -- 奖金金额
             
     */
-    function check(uint random_number, Data d) private returns (uint) {
+    function check(uint random_number, Data d) private view returns (uint) {
         
         uint i = 0;
         
