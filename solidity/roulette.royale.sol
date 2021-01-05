@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 1:1 比例 
 1个游戏币 = 1ETH
+0.1 游戏币 => 0.1 ether => 1e17
 
 手续费：1%
 最低下注手续费 1e15 --> 1 finney --> 0.001 ether
@@ -90,6 +91,9 @@ contract roulette_royale is Ownable {
     uint[] private line1        = [1,4,7,10,13,16,19,22,25,28,31,34];
     uint[] private line2        = [2,5,8,11,14,17,20,23,26,29,32,35];
     uint[] private line3        = [3,6,9,12,15,18,21,24,27,30,33,36];
+
+    // 轮盘坐标，0起始顺时针
+    uint[] private roulette     = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
     
     function() external payable {
         
@@ -137,6 +141,8 @@ contract roulette_royale is Ownable {
             b.amount += d.amount;
             b.data.push(d);
         }
+
+        require(b.amount > 100, "bet too large!");
 
         // 验证下注金额是否有效
         require(msg.value > 0 && msg.value >= b.amount, "insufficient fund!");
@@ -237,10 +243,12 @@ contract roulette_royale is Ownable {
                 uint  -- 奖金金额
             
     */
-    function check(uint random_number, Data d) private view returns (uint) {
+    function check(uint random_number, Data d) public view returns (uint) {
+        
+        d.amount *= 1e17;
         
         uint i = 0;
-        
+
         uint c = 0;
         
         uint amount = 0;
@@ -249,9 +257,6 @@ contract roulette_royale is Ownable {
         
         // 手续费
         uint fee = (d.amount / 100);
-        
-        // 最低手续费限制 1 finney
-        if (fee < 1e15) fee = 1e15;
         
         // 单注净值 (扣除 1% 的手续费)
         uint bv = d.amount - fee;
@@ -367,10 +372,38 @@ contract roulette_royale is Ownable {
             if (x == c || x == (c + 1) || x == (c + 3) || x == (c + 4)) amount += bv + (d.amount * 8);
         }
         
-        // 1/5 * 6    [low number] 例如 选择了 1和2和3和4和5 那么 code = 501
-        if (d.code > 500 && d.code < 600) {
+        // 1/5 * 6    [mid number] 例如 选择了 0 那么 code = 500, 
+        uint mid = 0;
+        if (d.code >= 500 && d.code < 600) {
             c = d.code - 500;
-            if (x == c || x == (c + 1) || x == (c + 2) || x == (c + 3) || x == (c + 4)) amount += bv + (d.amount * 6);
+            for (i = 0; i < roulette.length; i++ ) {
+                if (roulette[i] == c) {
+                    mid = i;
+                    break;
+                }
+            }
+            // 中
+            if (x == c) amount += bv + (d.amount * 6);
+
+            // 左2
+            uint left2 = mid - 2;
+            if (left2 < 0) left2 += roulette.length;
+            if (x == roulette[left2]) amount += bv + (d.amount * 6);
+
+            // 左1
+            uint left1 = mid - 1;
+            if (left1 < 0) left1 += roulette.length;
+            if (x == roulette[left1]) amount += bv + (d.amount * 6);
+
+            // 右1
+            uint right1 = mid + 1;
+            if (right1 >= roulette.length) right1 -= roulette.length;    
+            if (x == roulette[right1]) amount += bv + (d.amount * 6);
+            
+            // 右2
+            uint right2 = mid + 2;
+            if (right2 >= roulette.length) right2 -= roulette.length;
+            if (x == roulette[right2]) amount += bv + (d.amount * 6);
         }
 
         return (amount);
