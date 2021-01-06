@@ -7,6 +7,8 @@ pragma experimental ABIEncoderV2;
 1个游戏币 = 1ETH
 0.1 游戏币 => 0.1 ether => 1e17
 
+最小下注 0.1 游戏币, 调用合约时金额必须是整数, 所以 0.1 游戏币 下注时 bet.amount = 1 , 以此类推 1游戏币下注时 bet.amount = 10
+
 手续费：1%
 最低下注手续费 1e15 --> 1 finney --> 0.001 ether
 
