@@ -85,16 +85,6 @@ contract roulette_royale is Ownable {
     event CommitBet(uint);
     event CommitOpen(uint);
     
-    uint[] private redlist      = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    uint[] private blacklist    = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
-    
-    uint[] private line1        = [1,4,7,10,13,16,19,22,25,28,31,34];
-    uint[] private line2        = [2,5,8,11,14,17,20,23,26,29,32,35];
-    uint[] private line3        = [3,6,9,12,15,18,21,24,27,30,33,36];
-
-    // 轮盘坐标，0起始顺时针
-    uint[] private roulette     = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-    
     function() external payable {
         
     }
@@ -221,12 +211,12 @@ contract roulette_royale is Ownable {
             returns:
                 uint -- 奖金金额 (包含原始投注金额)
     */
-    function check(Bet b) private view returns (uint) {
+    function check(Bet b) private pure returns (uint) {
         uint amount = 0;
         
         for ( uint i = 0; i < b.data.length; i++ ) {
             Data memory d = b.data[i];
-            amount += check(b.random, d);
+            amount += check(b.random, d.code, d.amount);
         }
         
         return amount;
@@ -236,177 +226,326 @@ contract roulette_royale is Ownable {
         中奖检测
         
             params:
-                uint  -- 随机数
-                Data  -- 下注数据
+                random  -- 随机数
+                code    -- 下注编码
+                amount  -- 下注金额
                 
             returns:
-                uint  -- 奖金金额
+                uint  -- 奖金金额 (包含下注净值)
             
     */
-    function check(uint random_number, Data d) public view returns (uint) {
+    function check(uint random, uint code, uint amount) public pure returns (uint) {
         
-        d.amount *= 1e17;
+        uint r = random;
+        uint c = code;
+        uint a = amount * 1e17;
         
-        uint i = 0;
+        // single number
+        if (c >= 0 && c < 37) return check_single(r, c, a);
+        
+        // even or odd
+        if (c > 40 && c < 43) return check_even_odd(r, c, a);
+        
+        // red or black
+        if (c > 50 && c < 53) return check_red_black(r, c, a);
 
-        uint c = 0;
+        // small[1-18] or big[18-36]
+        if (c > 60 && c < 63) return check_small_big(r, c, a);
         
-        uint amount = 0;
-        
-        uint x = random_number;
-        
-        // 手续费
-        uint fee = (d.amount / 100);
-        
-        // 单注净值 (扣除 1% 的手续费)
-        uint bv = d.amount - fee;
-        
-        // 数字 * 35
-        if (d.code == x) amount += bv + (d.amount * 35);
-        
-        // 奇 * 1
-        if (d.code == 41 && x % 2 == 1) amount += bv + (d.amount * 1);
+        // 3 group
+        if (c > 70 && c < 74) return check_group(r, c, a);
 
-        // 偶 * 1
-        if (d.code == 42 && x % 2 == 0) amount += bv + (d.amount * 1);
+        // 3 line
+        if (c > 80 && c < 84) return check_line(r, c, a);
         
-        // 红 [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36] * 1
-        if (d.code == 51){
-            for (i = 0; i < redlist.length; i++ ) {
-                if (redlist[i] == x) {
-                    amount += bv + (d.amount * 1);
-                    break;
+        // 2 option
+        if (c >= 200 && c <= 299) return check_2(r, c, a);
+        
+        // 3 option
+        if (c >= 301 && c <= 302) return check_3(r, c, a);
+        
+        // 4 option
+        if (c >= 401 && c <= 432) return check_4(r, c, a);
+        
+        // 5 option
+        if (c >= 500 && c <= 536) return check_5(r, c, a);
+        
+        return 0;
+    }
+    
+    /*
+        扣手续费 1%
+    */
+    function net_value(uint a)  public pure returns (uint) {
+        if (a < 100) return 0;
+        return (a - (a / 100));
+    }
+    
+    /*
+        单数字
+        
+        35倍
+    */
+    function check_single(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c > 36) return 0;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 35);
+        
+        if (c == r) return w;
+        
+        return 0;
+    }
+    
+    /*
+        奇数 偶数
+        
+        1倍
+    */
+    function check_even_odd(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 41 || c > 42 ) return 0;
+        
+        uint x = c - 40;
+        
+        if (x == 2) x = 0;
+        
+        uint v = net_value(a);
+        
+        uint w = v + a;
+        
+        if (r % 2 == x) return w;
+        
+        return 0;
+    }
+    
+    /*
+        红 黑
+        
+        1倍
+    */
+    function check_red_black(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 51 || c > 52 ) return 0;
+        
+        uint v = net_value(a);
+        
+        uint w = v + a;
+        
+        uint i;
+        
+        uint8[18] memory red = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+        
+        if (c == 51) {
+            for (i = 0; i < red.length; i++ ) {
+                if (red[i] == r) {
+                    return w;
                 }
             }
         }
 
-        // 黑 [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35] * 1
-        if (d.code == 52) {
-            for (i = 0; i < blacklist.length; i++ ) {
-                if (redlist[i] == x) {
-                    amount += bv + (d.amount * 1);
-                    break;
+        uint8[18] memory black = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+        
+        if (c == 52) {
+            for (i = 0; i < black.length; i++ ) {
+                if (black[i] == r) {
+                    return w;
                 }
             }
         }
         
-        //  小号 [1 - 18] * 1
-        if (d.code == 61) {
-            if (x > 0 && x < 19 ) amount += bv + (d.amount * 1);
-        }
+        return 0;
+    }
+    
+    /*
+        大 小
         
-        // 大号 [19 - 36] * 1
-        if (d.code == 62) {
-            if (x > 18 && x < 37 ) amount += bv + (d.amount * 1);
-        }
+        1倍
+    */
+    function check_small_big(uint r, uint c, uint a) public pure returns (uint) {
         
-        // group-1 [1 - 12] * 2
-        if (d.code == 71) {
-            if (x > 0 && x < 13 ) amount += bv + (d.amount * 2);
-        }
+        if (c < 61 || c > 62) return 0;
         
-        // group-2 [13 - 24] * 2
-        if (d.code == 72) {
-            if (x > 13 && x < 25 ) amount += bv + (d.amount * 2);
-        }
+        uint x = c - 60;
         
-        // group-3 [25 - 36] * 2
-        if (d.code == 73) {
-            if (x > 24 && x < 37 ) amount += bv + (d.amount * 2);
+        uint v = net_value(a);
+        
+        uint w = v + a;
+
+        if ((x * 18) >= r || r >= ((x * 18) - 17)) return w;
+        
+        return 0;
+    }
+    
+    /*
+        group 3
+        
+        2倍
+    */
+    function check_group(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 71 || c > 73) return 0;
+        
+        uint x = c - 70;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 2);
+        
+        if (r >=  x * 12 - 11 && r <= x * 12) return w;
+
+        return 0;
+    }
+    
+    /*
+        line 3
+        
+        2倍
+    */
+    function check_line(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 81 || c > 83) return 0;
+        
+        uint x = c - 80;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 2);
+        
+        for (uint i = x; i < 37; i += 3 ) {
+            if (i == r) return w;
         }
 
-        // line-1 [1,4,7,10,13,16,19,22,25,28,31,34] * 2
-        if (d.code == 81) {
-            for (i = 0; i < line1.length; i++ ) {
-                if (line1[i] == x) {
-                    amount += bv + (d.amount * 2);
-                    break;
-                }
-            }
+        return 0;
+    }
+    
+    /*
+        option 2
+        
+        17倍
+    */
+    function check_2(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 200 || c > 300) return 0;
+        
+        uint x = c - 200;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 17);
+        
+        if (x >= 1 && x <= 36){
+            if (r == x || r == x + 1) return w;                 // 1 2 组队
         }
         
-        // line-2 [2,5,8,11,14,17,20,23,26,29,32,35] * 2
-        if (d.code == 82) {
-            for (i = 0; i < line2.length; i++ ) {
-                if (line2[i] == x) {
-                    amount += bv + (d.amount * 2);
-                    break;
-                }
-            }
+        if (x >= 41 && x <= 76) {
+            if (r == (x - 40) || r == (x - 40 + 3)) return w;   // 1 4 组队
         }
         
-        // line-3 [3,6,9,12,15,18,21,24,27,30,33,36] * 2
-        if (d.code == 83) {
-            for (i = 0; i < line3.length; i++ ) {
-                if (line3[i] == x) {
-                    amount += bv + (d.amount * 2);
-                    break;
-                }
-            }
-        }
-        
-        // 1/2 * 17   [low number] 例如 用户选择 0和1 那么 code = 241
-        if (d.code == 241 && (x == 0 || x == 1)) amount += bv + (d.amount * 17);
-        if (d.code == 242 && (x == 0 || x == 2)) amount += bv + (d.amount * 17);
-        if (d.code == 243 && (x == 0 || x == 3)) amount += bv + (d.amount * 17);
-
-        // 1/2 * 17   [low number] 例如 用户选择 1和2 那么 code = 201 横
-        if (d.code > 200 && d.code < 240) {
-            c = d.code - 200;
-            if (x == c || x == c + 1) amount += bv + (d.amount * 17);
+        if (x >= 91 && x <= 93) {
+            if (r == 0 || r == (x - 90)) return w;              // 0 与 [1,2,3] 组队
         }
 
-        // 1/2 * 17   [low number] 例如 用户选择 1和4 那么 code = 251 竖
-        if (d.code > 250 && d.code < 300) {
-            c = d.code - 250;
-            if (x == c || x == c + 3) amount += bv + (d.amount * 17);
+        return 0;
+    }
+    
+    /*
+        option 3
+        
+        0 1 2
+        
+        0 2 3
+        
+        11倍
+    */
+    function check_3(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 301 || c > 302) return 0;
+        
+        uint x = c - 300;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 11);
+        
+        if (r == 0 || r == x || r == (x + 1)) return w;
+        
+        return 0;
+    }
+    
+    /*
+        option 4
+        
+        8倍
+    */
+    function check_4(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 401 || c > 432) return 0;
+        
+        uint x = c - 400;
+        
+        for (uint i = 3; i < 32; i += 3 ) {
+            if (i == x) return 0;
         }
         
-        // 1/3 * 11   [low number] 例如 用户选择 0和1和2 那么 code = 301
-        if (d.code == 301 && (x == 0 || x == 1 || x == 2)) amount += bv + (d.amount * 11);
-        if (d.code == 302 && (x == 0 || x == 2 || x == 3)) amount += bv + (d.amount * 11);
+        uint v = net_value(a);
         
-        // 1/4 * 8    [low number] 例如 选择了 1和2和4和5 那么 code = 401
-        if (d.code > 400 && d.code < 500) {
-            c = d.code - 400;
-            if (x == c || x == (c + 1) || x == (c + 3) || x == (c + 4)) amount += bv + (d.amount * 8);
-        }
+        uint w = v + (a * 8);
         
-        // 1/5 * 6    [mid number] 例如 选择了 0 那么 code = 500, 
-        uint mid = 0;
-        if (d.code >= 500 && d.code < 600) {
-            c = d.code - 500;
-            for (i = 0; i < roulette.length; i++ ) {
-                if (roulette[i] == c) {
-                    mid = i;
-                    break;
-                }
-            }
-            // 中
-            if (x == c) amount += bv + (d.amount * 6);
-
-            // 左2
-            uint left2 = mid - 2;
-            if (left2 < 0) left2 += roulette.length;
-            if (x == roulette[left2]) amount += bv + (d.amount * 6);
-
-            // 左1
-            uint left1 = mid - 1;
-            if (left1 < 0) left1 += roulette.length;
-            if (x == roulette[left1]) amount += bv + (d.amount * 6);
-
-            // 右1
-            uint right1 = mid + 1;
-            if (right1 >= roulette.length) right1 -= roulette.length;    
-            if (x == roulette[right1]) amount += bv + (d.amount * 6);
+        if (r == c || r == (c + 1) || r == (c + 3) || r == (c + 4)) return w;
+        
+        return 0;
+    }
+    
+    /*
+        option 5
+       
+        [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26]
+       
+        params:
+            r    ==> random number
+            c    ==> bet code
+            a    ==> bet amount
             
-            // 右2
-            uint right2 = mid + 2;
-            if (right2 >= roulette.length) right2 -= roulette.length;
-            if (x == roulette[right2]) amount += bv + (d.amount * 6);
+        returns:
+            uint ==> bonus amount
+            
+        6倍
+    */
+    function check_5(uint r, uint c, uint a) public pure returns (uint) {
+        
+        if (c < 500 || c > 536) return 0;
+        
+        uint x = c - 500;
+        
+        uint v = net_value(a);
+        
+        uint w = v + (a * 6);
+        
+        if (x == r) return w;
+        
+        uint i;
+        uint j;
+
+        uint8[37] memory o = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+
+        for (i = 0; i < o.length; i++ ) {
+            if (o[i] == x) {
+                break;
+            }
         }
 
-        return (amount);
+        uint[4] memory k = [o.length + i - 2, o.length + i - 1, i + 1, i + 2];
+
+        for (j = 0; j < k.length; j++) {
+            uint n = k[j];
+            if (n >= o.length) n -= o.length;
+            if (r == o[n]) return w;
+        }
+
+        return 0;
     }
 
 }
