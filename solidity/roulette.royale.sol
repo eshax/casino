@@ -147,7 +147,7 @@ contract roulette_royale is Ownable {
         随机数
          0 - 36 中的 一个
     */
-    function create_random(string token, uint random) private view returns (uint) {
+    function create_random(string token, string random) public view returns (uint) {
         uint r = uint(keccak256(abi.encodePacked(block.difficulty, block.number, block.timestamp, now, token, random))) % 37;
         return r;
     }
@@ -162,7 +162,7 @@ contract roulette_royale is Ownable {
                 random -- 随机码 (项目方开奖前生成)
 
     */
-    function open(string token, uint random) external onlyCroupier {
+    function open(string token, string random) external onlyCroupier {
         
         Bet memory b = Bets[token];
         
@@ -185,6 +185,7 @@ contract roulette_royale is Ownable {
         }
         
         emit CommitOpen(token);
+        
     }
 
     /*
