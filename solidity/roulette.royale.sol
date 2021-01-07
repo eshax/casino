@@ -82,10 +82,10 @@ contract roulette_royale is Ownable {
         uint bonus;         // 奖金
     }
     
-    mapping(uint => Bet) private Bets;
+    mapping(string => Bet) private Bets;
     
-    event CommitBet(uint);
-    event CommitOpen(uint);
+    event CommitBet(string);
+    event CommitOpen(string);
     
     function() external payable {
         
@@ -113,7 +113,7 @@ contract roulette_royale is Ownable {
                 data  -- 下注数据  ps: [[61, 1e15], [62, 2e15]]
 
     */
-    function bet(uint token, Data[] memory data) public payable {
+    function bet(string token, Data[] memory data) public payable {
 
         Bet storage b = Bets[token];
         require (b.player == address(0), "Bet should be in a 'clean' state.");
@@ -130,11 +130,11 @@ contract roulette_royale is Ownable {
         */
         for (uint i = 0; i < data.length; i ++) {
             Data memory d = data[i];
-            b.amount += d.amount;
+            b.amount += (d.amount * 1e17);
             b.data.push(d);
         }
 
-        require(b.amount > 100, "bet too large!");
+        require(b.amount < 1e20, "bet too large!");
 
         // 验证下注金额是否有效
         require(msg.value > 0 && msg.value >= b.amount, "insufficient fund!");
@@ -147,7 +147,7 @@ contract roulette_royale is Ownable {
         随机数
          0 - 36 中的 一个
     */
-    function create_random(uint token, uint random) private view returns (uint) {
+    function create_random(string token, uint random) private view returns (uint) {
         uint r = uint(keccak256(abi.encodePacked(block.difficulty, block.number, block.timestamp, now, token, random))) % 37;
         return r;
     }
@@ -162,7 +162,7 @@ contract roulette_royale is Ownable {
                 random -- 随机码 (项目方开奖前生成)
 
     */
-    function open(uint token, uint random) external onlyCroupier {
+    function open(string token, uint random) external onlyCroupier {
         
         Bet memory b = Bets[token];
         
@@ -198,7 +198,7 @@ contract roulette_royale is Ownable {
             returns:
                 uint  -- 奖金
     */
-    function query(uint token) public view returns (uint) {
+    function query(string token) public view returns (uint) {
         Bet memory b = Bets[token];
         require (b.player == msg.sender, "caller is not the player!");
         return b.bonus;
