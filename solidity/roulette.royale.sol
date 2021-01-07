@@ -236,7 +236,7 @@ contract roulette_royale is Ownable {
                 uint  -- 奖金金额 (包含下注净值)
             
     */
-    function check(uint random, uint code, uint amount) public pure returns (uint) {
+    function check(uint random, uint code, uint amount) private pure returns (uint) {
         
         uint r = random;
         uint c = code;
@@ -278,7 +278,7 @@ contract roulette_royale is Ownable {
     /*
         扣手续费 1%
     */
-    function net_value(uint a)  public pure returns (uint) {
+    function net_value(uint a)  private pure returns (uint) {
         if (a < 100) return 0;
         return (a - (a / 100));
     }
@@ -288,7 +288,7 @@ contract roulette_royale is Ownable {
         
         35倍
     */
-    function check_single(uint r, uint c, uint a) public pure returns (uint) {
+    function check_single(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c > 36) return 0;
         
@@ -306,7 +306,7 @@ contract roulette_royale is Ownable {
         
         1倍
     */
-    function check_even_odd(uint r, uint c, uint a) public pure returns (uint) {
+    function check_even_odd(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 41 || c > 42 ) return 0;
         
@@ -328,7 +328,7 @@ contract roulette_royale is Ownable {
         
         1倍
     */
-    function check_red_black(uint r, uint c, uint a) public pure returns (uint) {
+    function check_red_black(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 51 || c > 52 ) return 0;
         
@@ -366,7 +366,7 @@ contract roulette_royale is Ownable {
         
         1倍
     */
-    function check_small_big(uint r, uint c, uint a) public pure returns (uint) {
+    function check_small_big(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 61 || c > 62) return 0;
         
@@ -386,7 +386,7 @@ contract roulette_royale is Ownable {
         
         2倍
     */
-    function check_group(uint r, uint c, uint a) public pure returns (uint) {
+    function check_group(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 71 || c > 73) return 0;
         
@@ -406,7 +406,7 @@ contract roulette_royale is Ownable {
         
         2倍
     */
-    function check_line(uint r, uint c, uint a) public pure returns (uint) {
+    function check_line(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 81 || c > 83) return 0;
         
@@ -428,7 +428,7 @@ contract roulette_royale is Ownable {
         
         17倍
     */
-    function check_2(uint r, uint c, uint a) public pure returns (uint) {
+    function check_2(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 200 || c > 300) return 0;
         
@@ -462,7 +462,7 @@ contract roulette_royale is Ownable {
         
         11倍
     */
-    function check_3(uint r, uint c, uint a) public pure returns (uint) {
+    function check_3(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 301 || c > 302) return 0;
         
@@ -482,7 +482,7 @@ contract roulette_royale is Ownable {
         
         8倍
     */
-    function check_4(uint r, uint c, uint a) public pure returns (uint) {
+    function check_4(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 401 || c > 432) return 0;
         
@@ -516,7 +516,7 @@ contract roulette_royale is Ownable {
             
         6倍
     */
-    function check_5(uint r, uint c, uint a) public pure returns (uint) {
+    function check_5(uint r, uint c, uint a) private pure returns (uint) {
         
         if (c < 500 || c > 536) return 0;
         
