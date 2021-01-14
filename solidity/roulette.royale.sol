@@ -110,7 +110,7 @@ contract roulette_royale is Ownable {
         
             params：
                 token -- token (项目方生成)
-                data  -- 下注数据  ps: [[61, 1e15], [62, 2e15]]
+                data  -- 下注数据  ps: [[61, 1], [62, 2]]
 
     */
     function bet(string token, Data[] memory data) public payable {
@@ -134,9 +134,12 @@ contract roulette_royale is Ownable {
             b.data.push(d);
         }
 
+        /*
+            单注下注金额, 应在在 100eth 以内
+        */
         require(b.amount < 1e20, "bet too large!");
 
-        // 验证下注金额是否有效
+        // 验证下注金额是否有效, 实际支付金额要大于下注累计金额
         require(msg.value > 0 && msg.value >= b.amount, "insufficient fund!");
         
         // 通知 项目方 已经完成下注
@@ -146,8 +149,14 @@ contract roulette_royale is Ownable {
     /*
         随机数
          0 - 36 中的 一个
+         
+        params:
+            token  -- 下注时 web3 传入的 token , 用于 web3 查询开奖结果
+            random -- 开奖时由项目方后台追加随机码, 防止第三方先知查询
+        returns:
+            uint   -- 0 ~ 36 的随机数
     */
-    function create_random(string token, string random) public view returns (uint) {
+    function create_random(string token, string random) private view returns (uint) {
         uint r = uint(keccak256(abi.encodePacked(block.difficulty, block.number, block.timestamp, now, token, random))) % 37;
         return r;
     }
@@ -158,7 +167,7 @@ contract roulette_royale is Ownable {
             只允许项目方指定的 address 调用
         
             params:
-                token  -- token (项目方生成)
+                token  -- token (玩家下注前由项目方代为生成)
                 random -- 随机码 (项目方开奖前生成)
 
     */
@@ -184,6 +193,7 @@ contract roulette_royale is Ownable {
             }
         }
         
+        // 通知 web3 已经开奖, web3可以调用 query 接口查询中奖结果
         emit CommitOpen(token);
         
     }
@@ -311,15 +321,13 @@ contract roulette_royale is Ownable {
         
         if (c < 41 || c > 42 ) return 0;
         
-        uint x = c - 40;
-        
-        if (x == 2) x = 0;
+        uint x = c - 40 - 1;
         
         uint v = net_value(a);
         
         uint w = v + a;
         
-        if (r % 2 == x) return w;
+        if (r % 2 != x) return w;
         
         return 0;
     }
@@ -377,7 +385,7 @@ contract roulette_royale is Ownable {
         
         uint w = v + a;
 
-        if ((x * 18) >= r || r >= ((x * 18) - 17)) return w;
+        if ( (x == 1 && r < 19 && r > 0) || (x == 2 && r > 18 && r < 37) ) return w;
         
         return 0;
     }
@@ -497,7 +505,7 @@ contract roulette_royale is Ownable {
         
         uint w = v + (a * 8);
         
-        if (r == c || r == (c + 1) || r == (c + 3) || r == (c + 4)) return w;
+        if (r == x || r == (x + 1) || r == (x + 3) || r == (x + 4)) return w;
         
         return 0;
     }
