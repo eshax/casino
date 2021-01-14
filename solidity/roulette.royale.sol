@@ -41,6 +41,10 @@ contract Ownable {
         return msg.sender == _owner;
     }
 
+    function isCroupier() public view returns (bool) {
+        return msg.sender == _croupier;
+    }
+    
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
         _;
